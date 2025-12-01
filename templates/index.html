@@ -1,0 +1,113 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Booking Calendar</title>
+    <link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.6/index.global.min.css' rel='stylesheet' />
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.6/index.global.min.js'></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 2rem;
+        }
+
+        #calendar {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Interaktywny Kalendarz Rezerwacji</h1>
+    <div id='calendar'></div>
+
+    <!-- Booking modal -->
+    <div id="modal"
+        style="display:none; position:fixed; top:20%; left:50%; transform:translateX(-50%); background: white; padding: 1rem; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
+        <form id="booking-form">
+            <input type="hidden" id="slot-id" name="slot" />
+            <div>
+                <label>First name: <input name="first_name" id="first_name" /></label>
+            </div>
+            <div>
+                <label>Last name: <input name="last_name" id="last_name" /></label>
+            </div>
+            <div>
+                <label>Email: <input name="email" id="email" /></label>
+            </div>
+            <div style="margin-top:1rem;">
+                <button type="submit">Book</button>
+                <button type="button" onclick="closeModal()">Cancel</button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const calendarEl = document.getElementById('calendar');
+            const calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay' },
+                events: function (fetchInfo, successCallback, failureCallback) {
+                    const start = fetchInfo.startStr;
+                    const end = fetchInfo.endStr;
+                    fetch(`/api/appointments/?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`)
+                        .then(res => res.json()).then(data => {
+                            successCallback(data.map(slot => ({
+                                id: slot.id,
+                                title: slot.available > 0 ? `Available (${slot.available})` : 'Full',
+                                start: slot.start,
+                                allDay: false,
+                                extendedProps: { duration: slot.duration_minutes }
+                            })));
+                        })
+                        .catch(err => { console.error(err); failureCallback(err); });
+                },
+                eventClick: function (info) {
+                    // show info and allow booking only if available
+                    const slotId = info.event.id;
+                    fetch(`/api/bookings/?slot=${slotId}`)
+                        .then(res => res.json())
+                        .then(bookings => {
+                            const bookingsList = bookings.map(b => `${b.first_name} ${b.last_name} (${b.email})`).join('\n') || 'No bookings yet';
+                            if (info.event.title.startsWith('Available')) {
+                                document.getElementById('slot-id').value = slotId;
+                                document.getElementById('modal').style.display = 'block';
+                                alert('Existing bookings:\n' + bookingsList);
+                            } else {
+                                alert('This slot is full.\nExisting bookings:\n' + bookingsList);
+                            }
+                        })
+                }
+            });
+            calendar.render();
+
+            document.getElementById('booking-form').addEventListener('submit', e => {
+                e.preventDefault();
+                const slot = document.getElementById('slot-id').value;
+                const first_name = document.getElementById('first_name').value;
+                const last_name = document.getElementById('last_name').value;
+                const email = document.getElementById('email').value;
+                fetch('/api/bookings/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ slot: slot, first_name, last_name, email }),
+                }).then(res => {
+                    if (!res.ok) return res.json().then(err => Promise.reject(err));
+                    return res.json();
+                }).then(data => {
+                    alert('Booking confirmed!');
+                    closeModal();
+                    calendar.refetchEvents();
+                }).catch(err => {
+                    alert('Booking failed: ' + (err.detail || JSON.stringify(err)));
+                });
+            });
+        });
+        function closeModal() { document.getElementById('modal').style.display = 'none'; }
+    </script>
+</body>
+
+</html>

@@ -31,7 +31,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework.authtoken",
     "corsheaders",
-    "reservations",
+    "api",
 ]
 
 MIDDLEWARE = [
@@ -75,7 +75,7 @@ else:
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
             "NAME": BASE_DIR / "db.sqlite3",
-        }
+        },
     }
 
 # password validators

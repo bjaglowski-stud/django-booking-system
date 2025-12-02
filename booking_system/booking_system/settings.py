@@ -31,7 +31,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework.authtoken",
     "corsheaders",
-    "reservations",
+    "api",
 ]
 
 MIDDLEWARE = [
@@ -66,9 +66,22 @@ TEMPLATES = [
 WSGI_APPLICATION = "booking_system.wsgi.application"
 
 # database - MySQL
-DEFAULT_DB_URL = env("DATABASE_URL", default="")
-if DEFAULT_DB_URL:
-    DATABASES = {"default": env.db("DATABASE_URL")}
+DATABASE_ADDRESS = env("DATABASE_ADDRESS", default="127.0.0.1")
+DATABASE_PORT = env("DATABASE_PORT", default="3306")
+DATATABE_USER = env("DATATABE_USER", default="")
+DATABASE_PASSWORD = env("DATABASE_PASSWORD", default="")
+DATABASE_NAME = env("DATABASE_NAME", default="booking_db")
+if DATABASE_ADDRESS:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.mysql",
+            "NAME": DATABASE_NAME,
+            "USER": DATATABE_USER,
+            "PASSWORD": DATABASE_PASSWORD,
+            "HOST": DATABASE_ADDRESS,
+            "PORT": DATABASE_PORT,
+        }
+    }
 else:
     # fallback to sqlite for development / tests
     DATABASES = {
@@ -95,7 +108,7 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 # Internationalization
-LANGUAGE_CODE = "en-us"
+LANGUAGE_CODE = "pl"
 TIME_ZONE = "UTC"
 USE_I18N = True
 USE_TZ = True

@@ -1,9 +1,9 @@
 from django.apps import AppConfig
 
 
-class ReservationsConfig(AppConfig):
+class APIConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
-    name = "reservations"
+    name = "api"
 
     def ready(self):
         pass  # register signals

@@ -1,3 +1,5 @@
+from django.contrib.auth import get_user_model
+from django.contrib.auth.password_validation import validate_password
 from django.db import transaction
 from django.utils import timezone
 from rest_framework import serializers
@@ -60,10 +62,6 @@ class BookingPublicSerializer(serializers.ModelSerializer):
         model = Booking
         fields = ["id", "first_name", "last_name", "created"]
         read_only_fields = ["created"]
-
-
-from django.contrib.auth import get_user_model
-from django.contrib.auth.password_validation import validate_password
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):

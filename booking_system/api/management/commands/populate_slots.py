@@ -1,8 +1,8 @@
 import datetime
 
+from api.models import AppointmentSlot
 from django.core.management.base import BaseCommand
 from django.utils import timezone
-from reservations.models import AppointmentSlot
 
 
 class Command(BaseCommand):

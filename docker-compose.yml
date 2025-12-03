@@ -10,7 +10,7 @@ services:
     ports:
       - "3306:3306"
     volumes:
-      - dbdata:/var/lib/mysql
+      - ./dbdata:/var/lib/mysql:rw
     networks:
       - booking_network
 
@@ -36,15 +36,12 @@ services:
       - "80:80"
     volumes:
       - ./templates:/usr/share/nginx/html:ro
+      - ./booking_system/staticfiles:/usr/share/nginx/html_static:ro
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
       - web
     networks:
       - booking_network
-
-volumes:
-  dbdata:
-
 
 networks:
   booking_network:

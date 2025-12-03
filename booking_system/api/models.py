@@ -55,10 +55,15 @@ class Booking(models.Model):
         ("cancelled", "Cancelled"),
     )
     slot = models.ForeignKey(AppointmentSlot, on_delete=models.CASCADE, related_name="bookings")
-    first_name = models.CharField(max_length=64)
-    last_name = models.CharField(max_length=64)
-    email = models.EmailField()
-    phone = models.CharField(max_length=20, blank=True)
+    # optional link to authenticated user
+    user = models.ForeignKey(
+        "auth.User",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="bookings",
+    )
+    # personal info removed — bookings are tied to `user` for contact details
     # optional reason/notes for appointment
     reason = models.TextField(blank=True)
     created = models.DateTimeField(auto_now_add=True)
@@ -68,7 +73,8 @@ class Booking(models.Model):
         ordering = ["-created"]
 
     def __str__(self):
-        return f"Booking for {self.first_name} {self.last_name} @ {self.slot.start.isoformat()}"
+        owner = self.user.username if self.user else "Anonymous"
+        return f"Booking for {owner} @ {self.slot.start.isoformat()}"
 
     def clean(self):
         if self.slot.start < timezone.now():

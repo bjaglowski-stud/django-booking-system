@@ -10,7 +10,7 @@ class AppointmentSlotAdmin(admin.ModelAdmin):
 
 @admin.register(Booking)
 class BookingAdmin(admin.ModelAdmin):
-    list_display = ("first_name", "last_name", "email", "phone", "slot", "status", "created")
+    list_display = ("user", "slot", "status", "created")
     list_filter = ("status", "slot")
-    search_fields = ("first_name", "last_name", "email", "phone")
+    search_fields = ("user__username", "user__email")
     readonly_fields = ("created",)

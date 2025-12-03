@@ -23,10 +23,12 @@ class AppointmentSlotSerializer(serializers.ModelSerializer):
 
 
 class BookingSerializer(serializers.ModelSerializer):
+    user = serializers.StringRelatedField(read_only=True)
+
     class Meta:
         model = Booking
-        fields = ["id", "slot", "first_name", "last_name", "email", "phone", "reason", "created", "status"]
-        read_only_fields = ["created", "status"]
+        fields = ["id", "slot", "user", "reason", "created", "status"]
+        read_only_fields = ["created", "status", "user"]
 
     def validate(self, data):
         # check slot exists and capacity
@@ -35,14 +37,17 @@ class BookingSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Cannot book a slot in the past")
         if slot.available_capacity() <= 0:
             raise serializers.ValidationError("Slot is full")
-        # prevent duplicate booking by same email for same slot
-        email = data.get("email")
-        if email and Booking.objects.filter(slot=slot, email__iexact=email, status="confirmed").exists():
-            raise serializers.ValidationError("You already have a confirmed booking for this slot")
-        # minimal phone validation (optional)
-        phone = data.get("phone")
-        if phone and len(phone) < 6:
-            raise serializers.ValidationError({"phone": "Enter a valid phone number"})
+
+        request = self.context.get("request")
+        user = getattr(request, "user", None) if request is not None else None
+
+        # prevent duplicate booking: check by authenticated user
+        if user and user.is_authenticated:
+            if Booking.objects.filter(slot=slot, user=user, status="confirmed").exists():
+                raise serializers.ValidationError("You already have a confirmed booking for this slot")
+        else:
+            # booking without authentication is not allowed by the viewset; keep validation minimal
+            pass
         return data
 
     def create(self, validated_data):
@@ -51,6 +56,13 @@ class BookingSerializer(serializers.ModelSerializer):
             slot = AppointmentSlot.objects.select_for_update().get(pk=validated_data["slot"].pk)
             if slot.available_capacity() <= 0:
                 raise serializers.ValidationError("Slot is full")
+            # If request user available in context, associate and fill missing personal info
+            request = self.context.get("request")
+            user = getattr(request, "user", None) if request is not None else None
+            if user and user.is_authenticated:
+                # associate booking with the authenticated user
+                validated_data["user"] = user
+
             booking = Booking.objects.create(**validated_data)
             return booking
 
@@ -60,7 +72,7 @@ class BookingPublicSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Booking
-        fields = ["id", "first_name", "last_name", "created"]
+        fields = ["id", "created"]
         read_only_fields = ["created"]
 
 

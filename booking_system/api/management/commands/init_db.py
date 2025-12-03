@@ -1,6 +1,4 @@
-import sys
 import os
-import traceback
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
@@ -115,7 +113,7 @@ class Command(BaseCommand):
             self.stdout.write("")
             self.stdout.write(
                 self.style.WARNING(
-                    "Set `MYSQL_ROOT_PASSWORD` (and optionally `MYSQL_ROOT_USER`) in your .env and retry, or create the database manually inside the DB container."
+                    "Set `MYSQL_ROOT_PASSWORD` (and optionally `MYSQL_ROOT_USER`) in your .env and retry, or create the database manually inside the DB container."  # noqa: E501
                 )
             )
             self.stdout.write(self.style.WARNING('Manual example: docker compose exec db mysql -uroot -p -e "CREATE DATABASE booking_db;"'))

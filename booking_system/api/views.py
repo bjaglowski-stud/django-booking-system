@@ -5,6 +5,7 @@ from django.utils import timezone
 from django.utils.dateparse import parse_date, parse_datetime
 from django.views.generic import TemplateView
 from rest_framework import permissions, status, viewsets
+from rest_framework.decorators import action
 from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -68,30 +69,56 @@ class BookingViewSet(viewsets.ModelViewSet):
     serializer_class = BookingSerializer
 
     def get_permissions(self):
-        # anyone can create bookings; listing by slot may be public; other actions require admin
+        # only authenticated users can create bookings; listing by slot may be public; other actions require admin
         if self.action == "create":
-            return [permissions.AllowAny()]
+            return [permissions.IsAuthenticated()]
         if self.action == "list":
             # allow public listing only when filtering by slot (limited data will be returned)
             if self.request and self.request.query_params.get("slot"):
                 return [permissions.AllowAny()]
+        if self.action in ("mine", "cancel"):
+            return [permissions.IsAuthenticated()]
         return [IsAdminUser()]
+
+    def get_serializer_class(self):
+        # when public listing by slot, use limited serializer
+        if self.action == "list" and self.request and self.request.query_params.get("slot"):
+            from .serializers import BookingPublicSerializer
+
+            return BookingPublicSerializer
+        return super().get_serializer_class()
 
     def get_queryset(self):
         qs = super().get_queryset()
         # support filtering by slot, email
         slot_id = self.request.query_params.get("slot")
-        email = self.request.query_params.get("email")
         if slot_id:
             qs = qs.filter(slot_id=slot_id)
-        if email:
-            qs = qs.filter(email__iexact=email)
         return qs
 
     def perform_create(self, serializer):
         booking = serializer.save()
         # signals will handle email
         return booking
+
+    @action(detail=False, methods=["get"], permission_classes=[permissions.IsAuthenticated])
+    def mine(self, request):
+        qs = Booking.objects.filter(user=request.user).select_related("slot")
+        page = self.paginate_queryset(qs)
+        serializer = self.get_serializer(page or qs, many=True)
+        if page is not None:
+            return self.get_paginated_response(serializer.data)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=["post"], permission_classes=[permissions.IsAuthenticated])
+    def cancel(self, request, pk=None):
+        booking = self.get_object()
+        if booking.user != request.user and not request.user.is_staff:
+            return Response({"detail": "Not allowed"}, status=status.HTTP_403_FORBIDDEN)
+        booking.status = "cancelled"
+        booking.save()
+        serializer = self.get_serializer(booking)
+        return Response(serializer.data)
 
 
 class RegisterView(APIView):

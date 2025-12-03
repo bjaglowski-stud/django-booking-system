@@ -9,5 +9,15 @@ from .models import Booking
 def on_booking_created(sender, instance, created, **kwargs):
     if created and instance.status == "confirmed":
         subject = "Booking confirmation"
-        body = f"Hello {instance.first_name},\n\nYour booking for {instance.slot.start} has been confirmed.\n\nThanks."
-        send_mail(subject, body, None, [instance.email])
+        # Prefer sending to the user's email if available
+        recipient = None
+        name = None
+        if instance.user:
+            recipient = getattr(instance.user, "email", None)
+            name = getattr(instance.user, "get_full_name", lambda: None)() or instance.user.username
+        else:
+            # No user attached — skip sending if no email
+            recipient = None
+        if recipient:
+            body = f"Hello {name},\n\nYour booking for {instance.slot.start} has been confirmed.\n\nThanks."
+            send_mail(subject, body, None, [recipient])

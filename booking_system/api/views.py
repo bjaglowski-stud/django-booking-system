@@ -12,6 +12,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from .models import AppointmentSlot, Booking
+from .permissions import IsBookingOwnerOrReadOnly, IsDoctorOrAdmin
 from .serializers import AppointmentSlotSerializer, BookingSerializer
 
 
@@ -25,7 +26,8 @@ class AppointmentSlotViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action in ["create", "update", "partial_update", "destroy"]:
-            return [IsAdminUser()]
+            # allow staff (admin) or users in the 'doctor' group to manage slots
+            return [IsDoctorOrAdmin()]
         return [permissions.AllowAny()]
 
     def get_queryset(self):  # noqa: C901
@@ -78,6 +80,9 @@ class BookingViewSet(viewsets.ModelViewSet):
                 return [permissions.AllowAny()]
         if self.action in ("mine", "cancel"):
             return [permissions.IsAuthenticated()]
+        if self.action in ("update", "partial_update"):
+            # allow owners to edit their booking (reason) or staff to edit
+            return [permissions.IsAuthenticated(), IsBookingOwnerOrReadOnly()]
         return [IsAdminUser()]
 
     def get_serializer_class(self):

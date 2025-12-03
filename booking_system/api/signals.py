@@ -21,3 +21,11 @@ def on_booking_created(sender, instance, created, **kwargs):
         if recipient:
             body = f"Hello {name},\n\nYour booking for {instance.slot.start} has been confirmed.\n\nThanks."
             send_mail(subject, body, None, [recipient])
+
+    # Ensure a 'doctor' group exists after migrations so administrators can assign doctor role
+    from django.contrib.auth.models import Group
+    from django.db.models.signals import post_migrate
+
+    @receiver(post_migrate)
+    def ensure_doctor_group(sender, **kwargs):
+        Group.objects.get_or_create(name="doctor")

@@ -65,37 +65,48 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "booking_system.wsgi.application"
 
-# database - MySQL
-DATABASE_ADDRESS = env("DATABASE_ADDRESS", default="127.0.0.1")
-DATABASE_PORT = env("DATABASE_PORT", default="3306")
-DATATABE_USER = env("DATATABE_USER", default="")
-DATABASE_PASSWORD = env("DATABASE_PASSWORD", default="")
-DATABASE_NAME = env("DATABASE_NAME", default="booking_db")
-if os.getenv("DATABASE_URL"):
-    # Heroku - używaj DATABASE_URL addon
-    import dj_database_url
+# database - obsługuje MySQL lokalnie i JawsDB na Heroku
+if os.getenv("JAWSDB_URL"):
+    # Heroku - MySQL via JawsDB
+    import urllib.parse
 
-    DATABASES = {"default": dj_database_url.config(default=os.getenv("DATABASE_URL"), conn_max_age=600)}
-elif DATABASE_ADDRESS:
-    # Lokalnie - MySQL
+    url = urllib.parse.urlparse(os.getenv("JAWSDB_URL"))
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.mysql",
-            "NAME": env("DATABASE_NAME"),
-            "USER": env("DATATABE_USER"),
-            "PASSWORD": env("DATABASE_PASSWORD"),
-            "HOST": env("DATABASE_ADDRESS"),
-            "PORT": env("DATABASE_PORT"),
+            "NAME": url.path[1:],
+            "USER": url.username,
+            "PASSWORD": url.password,
+            "HOST": url.hostname,
+            "PORT": url.port or 3306,
         }
     }
 else:
-    # fallback to sqlite for development / tests
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
-        },
-    }
+    # Lokalnie - MySQL
+    DATABASE_ADDRESS = env("DATABASE_ADDRESS", default="127.0.0.1")
+    DATABASE_PORT = env("DATABASE_PORT", default="3306")
+    DATATABE_USER = env("DATATABE_USER", default="")
+    DATABASE_PASSWORD = env("DATABASE_PASSWORD", default="")
+    DATABASE_NAME = env("DATABASE_NAME", default="booking_db")
+    if DATABASE_ADDRESS:
+        DATABASES = {
+            "default": {
+                "ENGINE": "django.db.backends.mysql",
+                "NAME": DATABASE_NAME,
+                "USER": DATATABE_USER,
+                "PASSWORD": DATABASE_PASSWORD,
+                "HOST": DATABASE_ADDRESS,
+                "PORT": DATABASE_PORT,
+            }
+        }
+    else:
+        # fallback to sqlite for development / tests
+        DATABASES = {
+            "default": {
+                "ENGINE": "django.db.backends.sqlite3",
+                "NAME": BASE_DIR / "db.sqlite3",
+            },
+        }
 
 # password validators
 AUTH_PASSWORD_VALIDATORS = [

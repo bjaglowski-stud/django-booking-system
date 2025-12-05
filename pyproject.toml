@@ -15,7 +15,8 @@ dependencies = [
     "djangorestframework-simplejwt",
     "python-dotenv",
     "django-cors-headers",
-    "gunicorn"
+    "dj_database_url",
+    "gunicorn",
 ]
 
 [project.optional-dependencies]

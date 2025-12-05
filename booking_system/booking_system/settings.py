@@ -71,15 +71,21 @@ DATABASE_PORT = env("DATABASE_PORT", default="3306")
 DATATABE_USER = env("DATATABE_USER", default="")
 DATABASE_PASSWORD = env("DATABASE_PASSWORD", default="")
 DATABASE_NAME = env("DATABASE_NAME", default="booking_db")
-if DATABASE_ADDRESS:
+if os.getenv("DATABASE_URL"):
+    # Heroku - używaj DATABASE_URL addon
+    import dj_database_url
+
+    DATABASES = {"default": dj_database_url.config(default=os.getenv("DATABASE_URL"), conn_max_age=600)}
+elif DATABASE_ADDRESS:
+    # Lokalnie - MySQL
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.mysql",
-            "NAME": DATABASE_NAME,
-            "USER": DATATABE_USER,
-            "PASSWORD": DATABASE_PASSWORD,
-            "HOST": DATABASE_ADDRESS,
-            "PORT": DATABASE_PORT,
+            "NAME": env("DATABASE_NAME"),
+            "USER": env("DATATABE_USER"),
+            "PASSWORD": env("DATABASE_PASSWORD"),
+            "HOST": env("DATABASE_ADDRESS"),
+            "PORT": env("DATABASE_PORT"),
         }
     }
 else:

@@ -4,9 +4,12 @@ asgiref==3.11.0
     # via
     #   django
     #   django-cors-headers
+dj-database-url==3.0.1
+    # via django-booking-system (pyproject.toml)
 django==5.2.8
     # via
     #   django-booking-system (pyproject.toml)
+    #   dj-database-url
     #   django-cors-headers
     #   djangorestframework
     #   djangorestframework-simplejwt
@@ -24,6 +27,8 @@ gunicorn==21.2.0
     # via django-booking-system (pyproject.toml)
 mysqlclient==2.2.7
     # via django-booking-system (pyproject.toml)
+packaging==25.0
+    # via gunicorn
 pyjwt==2.10.1
     # via
     #   django-booking-system (pyproject.toml)

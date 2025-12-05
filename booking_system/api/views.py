@@ -80,14 +80,23 @@ class BookingViewSet(viewsets.ModelViewSet):
                 return [permissions.AllowAny()]
         if self.action in ("mine", "cancel"):
             return [permissions.IsAuthenticated()]
+        if self.action == "retrieve":
+            # allow owners (or staff) to retrieve their booking detail
+            return [permissions.IsAuthenticated(), IsBookingOwnerOrReadOnly()]
         if self.action in ("update", "partial_update"):
             # allow owners to edit their booking (reason) or staff to edit
             return [permissions.IsAuthenticated(), IsBookingOwnerOrReadOnly()]
         return [IsAdminUser()]
 
     def get_serializer_class(self):
-        # when public listing by slot, use limited serializer
-        if self.action == "list" and self.request and self.request.query_params.get("slot"):
+        # when listing by slot, choose serializer based on requester:
+        # - staff or authenticated user (owner) should see full booking fields for their own bookings
+        # - anonymous/public should get the limited serializer
+        if self.request and self.request.query_params.get("slot"):
+            user = getattr(self.request, "user", None)
+            if user and user.is_authenticated:
+                # owners should get the full serializer (they'll only receive their own bookings by queryset)
+                return BookingSerializer
             from .serializers import BookingPublicSerializer
 
             return BookingPublicSerializer
@@ -95,10 +104,19 @@ class BookingViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         qs = super().get_queryset()
-        # support filtering by slot, email
+        # support filtering by slot
         slot_id = self.request.query_params.get("slot")
         if slot_id:
             qs = qs.filter(slot_id=slot_id)
+            # Privacy: if requester is staff, return all bookings for the slot.
+            # If requester is an authenticated regular user, return only their own bookings for that slot.
+            # Otherwise (anonymous), do not expose bookings for the slot.
+            user = getattr(self.request, "user", None)
+            if user and user.is_authenticated:
+                if user.is_staff:
+                    return qs
+                return qs.filter(user=user)
+            return qs.none()
         return qs
 
     def perform_create(self, serializer):
@@ -147,3 +165,21 @@ class RegisterView(APIView):
         )
         token_serializer.is_valid(raise_exception=True)
         return Response(token_serializer.validated_data, status=status.HTTP_201_CREATED)
+
+
+class CurrentUserView(APIView):
+    """Return current authenticated user's details."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        return Response(
+            {
+                "id": user.id,
+                "username": user.username,
+                "email": user.email,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+            }
+        )

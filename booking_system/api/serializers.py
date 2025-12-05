@@ -19,16 +19,26 @@ class AppointmentSlotSerializer(serializers.ModelSerializer):
         return obj.available_capacity()
 
     def get_doctor(self, obj):
-        return obj.doctor.name if obj.doctor else None
+        if obj.doctor:
+            return obj.doctor.get_full_name() or obj.doctor.username
+        return None
 
 
 class BookingSerializer(serializers.ModelSerializer):
     user = serializers.StringRelatedField(read_only=True)
+    is_owner = serializers.SerializerMethodField()
 
     class Meta:
         model = Booking
-        fields = ["id", "slot", "user", "reason", "created", "status"]
+        fields = ["id", "slot", "user", "reason", "created", "status", "is_owner"]
         read_only_fields = ["created", "status", "user"]
+
+    def get_is_owner(self, obj):
+        request = self.context.get("request")
+        if not request:
+            return False
+        user = getattr(request, "user", None)
+        return user and user.is_authenticated and obj.user == user
 
     def validate(self, data):
         # check slot exists and capacity

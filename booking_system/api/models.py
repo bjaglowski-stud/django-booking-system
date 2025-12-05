@@ -1,34 +1,23 @@
 import datetime
 
+from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
-
-
-class Doctor(models.Model):
-    """Simple doctor model for the clinic."""
-
-    name = models.CharField(max_length=128)
-    specialty = models.CharField(max_length=128, blank=True)
-
-    class Meta:
-        ordering = ["name"]
-
-    def __str__(self):
-        return self.name if not self.specialty else f"{self.name} ({self.specialty})"
 
 
 class AppointmentSlot(models.Model):
     start = models.DateTimeField()
     duration_minutes = models.IntegerField(default=30)
     max_capacity = models.IntegerField(default=1)  # number of bookings allowed per slot
-    # nullable doctor assignment for clinic context
+    # nullable doctor (user) assignment for clinic context
     doctor = models.ForeignKey(
-        "Doctor",
+        User,
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
-        related_name="slots",
+        related_name="appointment_slots",
+        limit_choices_to={"groups__name": "doctor"},
     )
 
     class Meta:

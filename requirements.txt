@@ -20,6 +20,8 @@ djangorestframework==3.16.1
     #   djangorestframework-simplejwt
 djangorestframework-simplejwt==5.5.1
     # via django-booking-system (pyproject.toml)
+gunicorn==21.2.0
+    # via django-booking-system (pyproject.toml)
 mysqlclient==2.2.7
     # via django-booking-system (pyproject.toml)
 pyjwt==2.10.1

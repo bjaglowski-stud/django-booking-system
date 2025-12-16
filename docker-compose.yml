@@ -1,0 +1,66 @@
+services:
+  db:
+    build:
+      context: ./booking_db
+      dockerfile: Dockerfile
+    container_name: booking_db
+    env_file: .env
+    environment:
+      - MYSQL_DATABASE=${DATABASE_NAME}
+      - MYSQL_USER=${DATABASE_USER}
+      - MYSQL_PASSWORD=${DATABASE_PASSWORD}
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./booking_db/dbdata:/var/lib/mysql:rw
+    networks:
+      - booking_network
+
+  backend:
+    build:
+      context: ./booking_backend
+      dockerfile: Dockerfile
+    container_name: booking_backend
+    image: booking_backend
+    command: bash -c "python manage.py migrate && python manage.py collectstatic --noinput && python manage.py runserver 0.0.0.0:8000"
+    env_file: .env
+    volumes:
+      - ./booking_backend:/app
+      - ./booking_backend/static:/app/static
+      - ./booking_backend/templates:/app/templates
+    # web is reachable inside the compose network at port 8000; nginx will proxy external traffic
+    depends_on:
+      - db
+    networks:
+      - booking_network
+
+  frontend:
+    build:
+      context: ./booking_frontend
+      dockerfile: Dockerfile
+    image: booking_frontend:latest
+    container_name: booking_frontend
+    # This service is just for building, not running
+    command: echo "Frontend built"
+    env_file: .env
+
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+      args:
+        FRONTEND_IMAGE: booking_frontend:latest
+    container_name: booking_nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./booking_backend/staticfiles:/usr/share/nginx/html_static:ro
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - backend
+    networks:
+      - booking_network
+
+networks:
+  booking_network:

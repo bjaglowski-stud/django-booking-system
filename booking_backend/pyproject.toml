@@ -1,0 +1,40 @@
+[project]
+name = "django-booking-system"
+version = "0.1.0"
+description = "Interactive booking calendar and reservation system"
+readme = "README.md"
+authors = [ { name = "Bartosz Jagłowski", email = "gdx180489@student.gdansk.merito.pl" } ]
+requires-python = ">=3.13"
+
+dependencies = [
+    "Django",
+    "djangorestframework",
+    "mysqlclient",
+    "django-environ",
+    "PyJWT",
+    "djangorestframework-simplejwt",
+    "python-dotenv",
+    "django-cors-headers",
+    "dj_database_url",
+    "gunicorn",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff",
+    "uv",
+    "pytest",
+    "pytest-django",
+]
+
+[tool.ruff]
+line-length = 160
+# ruff excludes patterns (avoid linting auto-generated files)
+exclude = ["**/migrations/**", "**/static/**", "**/templates/**"]
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "C", "B", "I"]
+
+# Configuration for ruff's formatter behavior
+[tool.ruff.format]

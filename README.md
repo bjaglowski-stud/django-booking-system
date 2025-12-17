@@ -8,7 +8,7 @@ Create a dynamic calendar that allows users to easily view available dates and b
 ## Tech Stack
 
 ### Backend
-- Django 5.x
+- Django 6.x
 - Django REST Framework
 - MySQL 8.x
 - JWT Authentication (djangorestframework-simplejwt)

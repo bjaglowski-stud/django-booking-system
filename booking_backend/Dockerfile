@@ -1,12 +1,12 @@
-FROM ghcr.io/astral-sh/uv:python3.13-trixie
+FROM python:3.14-slim-trixie
 
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+RUN apt-get update && apt-get install -y pkg-config default-libmysqlclient-dev gcc
 
 WORKDIR /app
-COPY . /app
 COPY requirements.txt /app
 RUN pip install --no-cache-dir -r /app/requirements.txt
+
+COPY . /app
 
 EXPOSE 8000
 CMD ["gunicorn", "booking_system.wsgi:application", "--bind", "0.0.0.0:8000"]

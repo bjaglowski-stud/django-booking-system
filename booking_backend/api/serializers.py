@@ -13,7 +13,7 @@ class AppointmentSlotSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = AppointmentSlot
-        fields = ["id", "start", "doctor", "is_booked"]
+        fields = ("id", "start", "doctor", "is_booked")
 
     def get_is_booked(self, obj):
         return obj.is_booked()
@@ -21,6 +21,7 @@ class AppointmentSlotSerializer(serializers.ModelSerializer):
     def get_doctor(self, obj):
         if obj.doctor:
             return obj.doctor.get_full_name() or obj.doctor.username
+
         return None
 
 
@@ -30,27 +31,26 @@ class BookingSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Booking
-        fields = ["id", "slot", "user", "reason", "status", "is_owner"]
-        read_only_fields = ["status", "user"]
+        fields = ("id", "slot", "user", "reason", "status", "is_owner")
+        read_only_fields = ("status", "user")
 
     def get_user(self, obj):
-        request = self.context.get("request")
-        user_obj = obj.user
-        if not user_obj:
+        if not (user_obj := obj.user):
             return None
+        request = self.context.get("request")
         # For administrators, return detailed user info
         if request and hasattr(request, "user"):
-            req_user = request.user
-            if req_user.groups.filter(name="administrator").exists():
+            if request.user.groups.filter(name="administrator").exists():
                 return {"id": user_obj.id, "username": user_obj.username, "full_name": user_obj.get_full_name() or user_obj.username}
         # For regular users, just return username
+
         return str(user_obj)
 
     def get_is_owner(self, obj):
-        request = self.context.get("request")
-        if not request:
+        if not (request := self.context.get("request")):
             return False
         user = getattr(request, "user", None)
+
         return user and user.is_authenticated and obj.user == user
 
     def validate(self, data):
@@ -72,6 +72,7 @@ class BookingSerializer(serializers.ModelSerializer):
             else:
                 # booking without authentication is not allowed by the viewset; keep validation minimal
                 pass
+
         return data
 
     def create(self, validated_data):
@@ -86,8 +87,8 @@ class BookingSerializer(serializers.ModelSerializer):
             if user and user.is_authenticated:
                 # associate booking with the authenticated user
                 validated_data["user"] = user
-
             booking = Booking.objects.create(**validated_data)
+
             return booking
 
 
@@ -96,8 +97,8 @@ class BookingPublicSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Booking
-        fields = ["id"]
-        read_only_fields = []
+        fields = ("id",)
+        read_only_fields = ()
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
@@ -109,6 +110,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
     def validate_password(self, value):
         validate_password(value)
+
         return value
 
     def create(self, validated_data):
@@ -117,4 +119,5 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         user = User.objects.create(**validated_data)
         user.set_password(password)
         user.save()
+
         return user

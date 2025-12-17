@@ -12,7 +12,7 @@ from .permissions import (
     IsBookingOwnerOrReadOnly,
     IsDoctor,
 )
-from .serializers import AppointmentSlotSerializer, BookingSerializer
+from .serializers import AppointmentSlotSerializer, BookingPublicSerializer, BookingSerializer, UserRegistrationSerializer
 
 
 class IndexView(TemplateView):
@@ -64,8 +64,6 @@ class BookingViewSet(viewsets.ModelViewSet):
             if user and user.is_authenticated:
                 # owners should get the full serializer (they'll only receive their own bookings by queryset)
                 return BookingSerializer
-            from .serializers import BookingPublicSerializer
-
             return BookingPublicSerializer
         return super().get_serializer_class()
 
@@ -98,6 +96,7 @@ class BookingViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(page or qs, many=True)
         if page is not None:
             return self.get_paginated_response(serializer.data)
+
         return Response(serializer.data)
 
     @action(detail=False, methods=["get"], permission_classes=[permissions.IsAuthenticated, IsAdministrator])
@@ -108,6 +107,7 @@ class BookingViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(page or qs, many=True)
         if page is not None:
             return self.get_paginated_response(serializer.data)
+
         return Response(serializer.data)
 
     @action(detail=True, methods=["post"], permission_classes=[permissions.IsAuthenticated])
@@ -120,6 +120,7 @@ class BookingViewSet(viewsets.ModelViewSet):
         booking.status = "cancelled"
         booking.save()
         serializer = self.get_serializer(booking)
+
         return Response(serializer.data)
 
 
@@ -129,8 +130,6 @@ class RegisterView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request, *args, **kwargs):
-        from .serializers import UserRegistrationSerializer
-
         serializer = UserRegistrationSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
@@ -143,6 +142,7 @@ class RegisterView(APIView):
             }
         )
         token_serializer.is_valid(raise_exception=True)
+
         return Response(token_serializer.validated_data, status=status.HTTP_201_CREATED)
 
 
@@ -153,6 +153,7 @@ class CurrentUserView(APIView):
 
     def get(self, request):
         user = request.user
+
         return Response(
             {
                 "id": user.id,

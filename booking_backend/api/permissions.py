@@ -36,9 +36,7 @@ class CanCreateBooking(IsAuthenticatedBase):
 
     def check_permission(self, request, view, user):
         # deny if user is in 'doctor' group
-        if user.groups.filter(name="doctor").exists():
-            return False
-        return True
+        return not user.groups.filter(name="doctor").exists()
 
 
 class IsBookingOwnerOrReadOnly(permissions.BasePermission):

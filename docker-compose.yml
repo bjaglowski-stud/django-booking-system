@@ -16,6 +16,12 @@ services:
       - ./booking_db/dbdata:/var/lib/mysql:rw
     networks:
       - booking_network
+    healthcheck:
+      test: mysqladmin ping -h 127.0.0.1 -u $$MYSQL_USER --password=$$MYSQL_PASSWORD
+      start_period: 1s
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   backend:
     build:
@@ -34,6 +40,7 @@ services:
       - db
     networks:
       - booking_network
+    restart: on-failure:5
 
   frontend:
     build:

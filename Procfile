@@ -1,2 +1,2 @@
-release: python booking_system/manage.py migrate
-web: cd booking_system && gunicorn booking_system.wsgi:application --log-file -
+release: python booking_backend/manage.py migrate && python booking_backend/manage.py collectstatic --noinput
+web: cd booking_backend && gunicorn booking_system.wsgi:application --log-file -

@@ -132,7 +132,17 @@ USE_TZ = True
 # static files
 STATIC_URL = "/static/"
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
-STATICFILES_DIRS = [os.path.join(BASE_DIR, "static")]
+
+# Angular build directory
+ANGULAR_BUILD_DIR = os.path.join(BASE_DIR.parent.parent, "booking_frontend", "dist", "booking-frontend", "browser")
+
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, "static"),
+]
+
+# Add Angular build directory if it exists
+if os.path.exists(ANGULAR_BUILD_DIR):
+    STATICFILES_DIRS.append(ANGULAR_BUILD_DIR)
 
 # Default primary key
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

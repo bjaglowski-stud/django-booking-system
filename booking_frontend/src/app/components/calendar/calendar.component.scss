@@ -35,4 +35,41 @@
         font-size: 0.65rem;
         padding: 1px 2px;
     }
+
+    /* Responsive toolbar layout */
+    :host ::ng-deep .fc-header-toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    /* Title first - full width */
+    :host ::ng-deep .fc-toolbar-chunk:nth-child(2) {
+        order: -1;
+        width: 100%;
+        text-align: center;
+    }
+
+    /* All buttons in one row */
+    :host ::ng-deep .fc-toolbar-chunk:first-child {
+        display: flex;
+        gap: 4px;
+        flex: 1;
+    }
+
+    :host ::ng-deep .fc-toolbar-chunk:last-child {
+        display: flex;
+        gap: 4px;
+        flex: 1;
+    }
+
+    :host ::ng-deep .fc-prev-button,
+    :host ::ng-deep .fc-next-button,
+    :host ::ng-deep .fc-today-button,
+    :host ::ng-deep .fc-timeGridDay-button,
+    :host ::ng-deep .fc-timeGridWeek-button,
+    :host ::ng-deep .fc-dayGridMonth-button {
+        flex: 1;
+        min-width: 0;
+    }
 }

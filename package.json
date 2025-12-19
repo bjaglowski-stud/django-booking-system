@@ -2,7 +2,7 @@
     "name": "django-booking-system",
     "version": "1.0.0",
     "scripts": {
-        "build": "cd booking_frontend && npm install && npm run build",
+        "build": "cd booking_frontend && npm install --legacy-peer-deps && npm run build",
         "heroku-postbuild": "npm run build"
     },
     "engines": {

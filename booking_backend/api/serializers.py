@@ -28,11 +28,17 @@ class AppointmentSlotSerializer(serializers.ModelSerializer):
 class BookingSerializer(serializers.ModelSerializer):
     user = serializers.SerializerMethodField()
     is_owner = serializers.SerializerMethodField()
+    slot_details = serializers.SerializerMethodField()
 
     class Meta:
         model = Booking
-        fields = ("id", "slot", "user", "reason", "status", "is_owner")
+        fields = ("id", "slot", "user", "reason", "status", "is_owner", "slot_details")
         read_only_fields = ("status", "user")
+
+    def get_slot_details(self, obj):
+        if obj.slot:
+            return {"id": obj.slot.id, "start": obj.slot.start.isoformat(), "doctor_name": obj.slot.doctor.get_full_name() if obj.slot.doctor else None}
+        return None
 
     def get_user(self, obj):
         if not (user_obj := obj.user):

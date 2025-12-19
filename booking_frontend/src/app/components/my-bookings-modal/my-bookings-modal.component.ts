@@ -101,7 +101,19 @@ export class MyBookingsModalComponent implements OnInit {
     this.loading.set(true);
     this.bookingService.getMyBookings().subscribe({
       next: (data) => {
-        this.bookings.set(data);
+        // Sort bookings: active first (by date), cancelled last
+        const sorted = data.sort((a, b) => {
+          // Cancelled bookings go to the end
+          if (a.status === 'cancelled' && b.status !== 'cancelled') return 1;
+          if (a.status !== 'cancelled' && b.status === 'cancelled') return -1;
+
+          // For same status, sort by date (earliest first)
+          const dateA = new Date(a.slot_details?.start || 0).getTime();
+          const dateB = new Date(b.slot_details?.start || 0).getTime();
+          return dateA - dateB;
+        });
+
+        this.bookings.set(sorted);
         this.loading.set(false);
       },
       error: (err) => {

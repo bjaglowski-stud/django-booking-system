@@ -38,7 +38,7 @@ import { AllBookingsModalComponent } from '../all-bookings-modal/all-bookings-mo
                 </li>
               }
               <li class="nav-item">
-                <span class="navbar-text me-3">{{ getUserDisplayName() }}</span>
+                <a class="nav-link">{{ getUserDisplayName() }}</a>
               </li>
               <li class="nav-item">
                 <a class="nav-link" href="javascript:void(0)" (click)="onLogout()">Wyloguj</a>

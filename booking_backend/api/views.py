@@ -1,3 +1,4 @@
+from django.utils import timezone
 from django.views.generic import TemplateView
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
@@ -22,6 +23,12 @@ class IndexView(TemplateView):
 class AppointmentSlotViewSet(viewsets.ModelViewSet):
     queryset = AppointmentSlot.objects.all()
     serializer_class = AppointmentSlotSerializer
+
+    def get_queryset(self):
+        # Only return future appointment slots
+        qs = super().get_queryset()
+        now = timezone.now()
+        return qs.filter(start__gte=now).order_by("start")
 
     def get_permissions(self):
         if self.action in ("create", "update", "partial_update", "destroy"):

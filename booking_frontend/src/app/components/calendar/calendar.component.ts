@@ -1,8 +1,9 @@
 import { Component, OnInit, inject, signal, ViewChild, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FullCalendarModule } from '@fullcalendar/angular';
+import { FullCalendarModule, FullCalendarComponent } from '@fullcalendar/angular';
 import { CalendarOptions, EventClickArg, DateSelectArg } from '@fullcalendar/core';
 import timeGridPlugin from '@fullcalendar/timegrid';
+import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import plLocale from '@fullcalendar/core/locales/pl';
 import { AppointmentService } from '../../services/appointment.service';
@@ -18,7 +19,7 @@ import { AddSlotModalComponent } from '../add-slot-modal/add-slot-modal.componen
     imports: [CommonModule, FullCalendarModule, BookingModalComponent, AddSlotModalComponent],
     template: `
     <div class="calendar-container">
-      <full-calendar [options]="calendarOptions()"></full-calendar>
+      <full-calendar #calendar [options]="calendarOptions()"></full-calendar>
     </div>
 
     @if (showBookingModal()) {
@@ -38,23 +39,15 @@ import { AddSlotModalComponent } from '../add-slot-modal/add-slot-modal.componen
       </app-add-slot-modal>
     }
   `,
-    styles: [`
-    .calendar-container {
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 20px;
-    }
-    
-    :host ::ng-deep .fc-timegrid-slot {
-      height: 4em !important;
-    }
-  `]
+    styleUrl: './calendar.component.scss'
 })
 export class CalendarComponent implements OnInit {
     private appointmentService = inject(AppointmentService);
     private bookingService = inject(BookingService);
     private authService = inject(AuthService);
+    private notificationService = inject(NotificationService);
 
+    @ViewChild('calendar') calendarComponent!: FullCalendarComponent;
     @Output() loginRequired = new EventEmitter<void>();
 
     showBookingModal = signal(false);
@@ -64,7 +57,7 @@ export class CalendarComponent implements OnInit {
     selectedSlotInfo = signal<any>(null);
 
     calendarOptions = signal<CalendarOptions>({
-        plugins: [timeGridPlugin, interactionPlugin],
+        plugins: [timeGridPlugin, dayGridPlugin, interactionPlugin],
         initialView: 'timeGridWeek',
         locale: plLocale,
         firstDay: 1,
@@ -76,7 +69,7 @@ export class CalendarComponent implements OnInit {
         headerToolbar: {
             left: 'prev,next today',
             center: 'title',
-            right: 'timeGridWeek,timeGridDay'
+            right: 'dayGridMonth,timeGridWeek,timeGridDay'
         },
         selectable: true,
         selectMirror: true,
@@ -161,8 +154,10 @@ export class CalendarComponent implements OnInit {
     }
 
     refreshCalendar(): void {
-        // Trigger calendar refetch by updating the options
-        const currentOptions = this.calendarOptions();
-        this.calendarOptions.set({ ...currentOptions });
+        // Use FullCalendar API to refetch events
+        if (this.calendarComponent) {
+            const calendarApi = this.calendarComponent.getApi();
+            calendarApi.refetchEvents();
+        }
     }
 }

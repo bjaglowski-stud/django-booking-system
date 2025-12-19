@@ -57,12 +57,15 @@ export class AppointmentService {
             let backgroundColor: string;
             let borderColor: string;
 
+            // Extract first name only for shorter display
+            const doctorFirstName = slot.doctor ? slot.doctor.split(' ')[0] : 'Lekarz';
+
             if (slot.is_booked) {
-                title = `Zajęte - ${slot.doctor || 'Lekarz'}`;
+                title = `Zajęte - ${doctorFirstName}`;
                 backgroundColor = '#dc3545';
                 borderColor = '#dc3545';
             } else {
-                title = `Wolne - ${slot.doctor || 'Lekarz'}`;
+                title = `Wolne - ${doctorFirstName}`;
                 backgroundColor = '#28a745';
                 borderColor = '#28a745';
             }

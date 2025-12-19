@@ -1,0 +1,25 @@
+.calendar-container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+:host ::ng-deep .fc-timegrid-slot {
+    height: 4em !important;
+}
+
+/* Month view - smaller font and better text wrapping */
+:host ::ng-deep .fc-daygrid-event {
+    font-size: 0.75rem;
+    white-space: normal;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+:host ::ng-deep .fc-daygrid-event-harness {
+    margin-bottom: 1px;
+}
+
+:host ::ng-deep .fc-event-title {
+    font-weight: 500;
+}

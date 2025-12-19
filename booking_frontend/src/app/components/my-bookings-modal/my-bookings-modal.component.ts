@@ -32,17 +32,15 @@ import { NotificationService } from '../../services/notification.service';
                   <tr>
                     <th>Data</th>
                     <th>Lekarz</th>
-                    <th>Powód</th>
                     <th>Status</th>
                     <th>Akcje</th>
                   </tr>
                 </thead>
                 <tbody>
-                  @for (booking of bookings(); track booking.id) {
-                    <tr>
+                  @for (booking of paginatedBookings(); track booking.id) {
+                    <tr [title]="'Powód: ' + booking.reason" class="booking-row">
                       <td>{{ formatDate(booking.slot_details?.start) }}</td>
                       <td>{{ booking.slot_details?.doctor_name }}</td>
-                      <td>{{ booking.reason }}</td>
                       <td>
                         <span [class]="getStatusClass(booking.status)">
                           {{ getStatusLabel(booking.status) }}
@@ -60,6 +58,31 @@ import { NotificationService } from '../../services/notification.service';
                 </tbody>
               </table>
             </div>
+
+            <!-- Pagination -->
+            @if (totalPages() > 1) {
+              <nav aria-label="Nawigacja stron">
+                <ul class="pagination justify-content-center mb-0">
+                  <li class="page-item" [class.disabled]="currentPage() === 1">
+                    <a class="page-link" href="javascript:void(0)" (click)="goToPage(currentPage() - 1)">
+                      Poprzednia
+                    </a>
+                  </li>
+                  @for (page of pages; track page) {
+                    <li class="page-item" [class.active]="currentPage() === page">
+                      <a class="page-link" href="javascript:void(0)" (click)="goToPage(page)">
+                        {{ page }}
+                      </a>
+                    </li>
+                  }
+                  <li class="page-item" [class.disabled]="currentPage() === totalPages()">
+                    <a class="page-link" href="javascript:void(0)" (click)="goToPage(currentPage() + 1)">
+                      Następna
+                    </a>
+                  </li>
+                </ul>
+              </nav>
+            }
           }
 
           @if (errorMessage()) {
@@ -74,13 +97,16 @@ import { NotificationService } from '../../services/notification.service';
   `,
   styles: [`
     .modal-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1040; }
-    .modal-dialog { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); z-index: 1050; width: 90%; max-width: 800px; }
+    .modal-dialog { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); z-index: 1050; width: 90%; max-width: 800px; max-height: 90vh; overflow-y: auto; }
     .modal-content { background: white; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); padding: 20px; }
     .modal-header { border-bottom: 1px solid #dee2e6; padding-bottom: 15px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
     .modal-footer { border-top: 1px solid #dee2e6; padding-top: 15px; margin-top: 15px; }
     .btn-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; opacity: 0.5; }
     .btn-close:hover { opacity: 1; }
     .badge { padding: 0.25em 0.6em; border-radius: 0.25rem; font-weight: 500; }
+    .pagination { margin-top: 1rem; }
+    .booking-row { cursor: pointer; }
+    .booking-row:hover { background-color: #f8f9fa; }
   `]
 })
 export class MyBookingsModalComponent implements OnInit {
@@ -90,8 +116,13 @@ export class MyBookingsModalComponent implements OnInit {
   private notificationService = inject(NotificationService);
 
   bookings = signal<Booking[]>([]);
+  paginatedBookings = signal<Booking[]>([]);
   loading = signal(true);
   errorMessage = signal('');
+
+  currentPage = signal(1);
+  pageSize = 10;
+  totalPages = signal(1);
 
   ngOnInit(): void {
     this.loadBookings();
@@ -114,6 +145,8 @@ export class MyBookingsModalComponent implements OnInit {
         });
 
         this.bookings.set(sorted);
+        this.totalPages.set(Math.ceil(sorted.length / this.pageSize));
+        this.updatePaginatedBookings();
         this.loading.set(false);
       },
       error: (err) => {
@@ -123,6 +156,23 @@ export class MyBookingsModalComponent implements OnInit {
         this.loading.set(false);
       }
     });
+  }
+
+  updatePaginatedBookings(): void {
+    const start = (this.currentPage() - 1) * this.pageSize;
+    const end = start + this.pageSize;
+    this.paginatedBookings.set(this.bookings().slice(start, end));
+  }
+
+  goToPage(page: number): void {
+    if (page >= 1 && page <= this.totalPages()) {
+      this.currentPage.set(page);
+      this.updatePaginatedBookings();
+    }
+  }
+
+  get pages(): number[] {
+    return Array.from({ length: this.totalPages() }, (_, i) => i + 1);
   }
 
   cancelBooking(bookingId: number): void {

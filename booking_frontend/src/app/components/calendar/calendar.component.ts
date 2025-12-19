@@ -78,7 +78,8 @@ export class CalendarComponent implements OnInit {
             this.loadEvents(info.start, info.end, successCallback, failureCallback);
         },
         eventClick: (info) => this.handleEventClick(info),
-        select: (info) => this.handleDateSelect(info)
+        select: (info) => this.handleDateSelect(info),
+        eventDidMount: (arg) => this.customizeEventDisplay(arg)
     });
 
     ngOnInit(): void { }
@@ -141,6 +142,36 @@ export class CalendarComponent implements OnInit {
             },
             error: (err) => console.error('Error loading booking details:', err)
         });
+    }
+
+    customizeEventDisplay(info: any): void {
+        const isNarrowScreen = window.innerWidth <= 768;
+        const isMonthView = info.view.type === 'dayGridMonth';
+        const doctorName = info.event.extendedProps['doctorName'];
+        const titleEl = info.el.querySelector('.fc-event-title');
+
+        if (!titleEl || !doctorName) return;
+
+        // Narrow screen: show time + initials
+        if (isNarrowScreen) {
+            const nameParts = doctorName.split(' ');
+            const initials = nameParts
+                .map((part: string) => part.charAt(0).toUpperCase())
+                .join('');
+
+            titleEl.textContent = `${initials} `;
+            return;
+        }
+
+        // Month view on wide screen: show only first name
+        if (isMonthView) {
+            const firstName = doctorName.split(' ')[0];
+            const status = info.event.extendedProps['isBooked'] ? 'Zajęte' : 'Wolne';
+            titleEl.textContent = ` ${status} - ${firstName}`;
+            return;
+        }
+
+        // Day/Week view: use default title (full name already in event.title)
     }
 
     onBookingCreated(): void {

@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
+import { NotificationService } from '../../services/notification.service';
 import { User } from '../../models/types';
 import { LoginModalComponent } from '../login-modal/login-modal.component';
 import { RegisterModalComponent } from '../register-modal/register-modal.component';
@@ -77,6 +78,7 @@ import { AllBookingsModalComponent } from '../all-bookings-modal/all-bookings-mo
 })
 export class NavbarComponent implements OnInit {
   private authService = inject(AuthService);
+  private notificationService = inject(NotificationService);
 
   showNav = signal(false);
   isAuthenticated = signal(false);
@@ -125,6 +127,7 @@ export class NavbarComponent implements OnInit {
 
   onLogout(): void {
     this.authService.logout();
+    this.notificationService.success('Wylogowano pomyślnie');
   }
 
   openLoginModal(): void {

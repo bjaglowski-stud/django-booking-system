@@ -52,7 +52,7 @@ class IsBookingOwnerOrReadOnly(permissions.BasePermission):
     Intended for use on Booking objects where owner is in `obj.user`.
     """
 
-    def has_object_permission(self, request, view, obj):
+    def has_object_permission(self, request: Request, view: APIView, obj) -> bool:
         # safe methods allowed for any authenticated user (or the view may allow unauthenticated listing)
         if request.method in permissions.SAFE_METHODS:
             return True

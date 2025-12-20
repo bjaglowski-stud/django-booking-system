@@ -15,50 +15,50 @@ if TYPE_CHECKING:
 def _get_booking_confirmation_email_content(user_name: str, slot_time: str, doctor_name: str | None, reason: str) -> str:
     return t"""Witaj {user_name},
 
-        Twoja wizyta została pomyślnie zarezerwowana.
+Twoja wizyta została pomyślnie zarezerwowana.
 
-        Szczegóły:
-        Data i godzina: {slot_time}
-        Lekarz: {doctor_name if doctor_name else "Do ustalenia"}
-        Powód wizyty: {reason if reason else "Nie podano"}
+Szczegóły:
+Data i godzina: {slot_time}
+Lekarz: {doctor_name if doctor_name else "Do ustalenia"}
+Powód wizyty: {reason if reason else "Nie podano"}
 
-        Dziękujemy za skorzystanie z naszego systemu.
+Dziękujemy za skorzystanie z naszego systemu.
 
-        Pozdrawiamy,
-        System Rezerwacji
+Pozdrawiamy,
+System Rezerwacji
 """
 
 
 def _get_booking_cancellation_email_content(user_name: str, slot_time: str, doctor_name: str | None) -> str:
     return t"""Witaj {user_name},
 
-        Twoja wizyta została anulowana.
+Twoja wizyta została anulowana.
 
-        Szczegóły anulowanej wizyty:
-        Data i godzina: {slot_time}
-        Lekarz: {doctor_name if doctor_name else "Do ustalenia"}
+Szczegóły anulowanej wizyty:
+Data i godzina: {slot_time}
+Lekarz: {doctor_name if doctor_name else "Do ustalenia"}
 
-        Jeśli chcesz umówić nową wizytę, zapraszamy do naszego systemu rezerwacji.
+Jeśli chcesz umówić nową wizytę, zapraszamy do naszego systemu rezerwacji.
 
-        Pozdrawiamy,
-        System Rezerwacji
+Pozdrawiamy,
+System Rezerwacji
 """
 
 
 def _get_doctor_notification_email_content(doctor_name: str, slot_time: str, user_name: str | None, instance: Booking) -> str:
     return t"""Witaj {doctor_name},
 
-        Masz nową rezerwację wizyty.
+Masz nową rezerwację wizyty.
 
-        Szczegóły:
-        Data i godzina: {slot_time}
-        Pacjent: {user_name if user_name else "Nieznany"}
-        Powód wizyty: {instance.reason if instance.reason else "Nie podano"}
+Szczegóły:
+Data i godzina: {slot_time}
+Pacjent: {user_name if user_name else "Nieznany"}
+Powód wizyty: {instance.reason if instance.reason else "Nie podano"}
 
-        Zaloguj się do systemu aby zobaczyć pełne szczegóły.
+Zaloguj się do systemu aby zobaczyć pełne szczegóły.
 
-        Pozdrawiamy,
-        System Rezerwacji
+Pozdrawiamy,
+System Rezerwacji
 """
 
 

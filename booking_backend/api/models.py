@@ -7,7 +7,7 @@ from django.utils import timezone
 
 
 class AppointmentSlot(models.Model):
-    start = models.DateTimeField()
+    start = models.DateTimeField(db_index=True)
     # nullable doctor (user) assignment for clinic context
     doctor = models.ForeignKey(
         User,
@@ -45,10 +45,16 @@ class Booking(models.Model):
     )
     # optional reason/notes for appointment
     reason = models.TextField(blank=True)
-    status = models.CharField(max_length=20, choices=Status.choices, default=Status.CONFIRMED)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.CONFIRMED, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ["id"]
+        indexes = [
+            models.Index(fields=["slot", "status"]),
+            models.Index(fields=["user", "status"]),
+        ]
 
     def __str__(self) -> str:
         owner = self.user.username if self.user else "Anonymous"

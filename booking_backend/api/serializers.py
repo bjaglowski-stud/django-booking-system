@@ -1,3 +1,5 @@
+from typing import Any
+
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
@@ -36,12 +38,12 @@ class BookingSerializer(serializers.ModelSerializer):
         fields = ("id", "slot", "user", "reason", "status", "is_owner", "slot_details")
         read_only_fields = ("status", "user")
 
-    def get_slot_details(self, obj: Booking) -> dict[str] | None:
+    def get_slot_details(self, obj: Booking) -> dict[str, Any] | None:
         if obj.slot:
             return {"id": obj.slot.id, "start": obj.slot.start.isoformat(), "doctor_name": obj.slot.doctor.get_full_name() if obj.slot.doctor else None}
         return None
 
-    def get_user(self, obj: Booking) -> str | dict[str, str] | None:
+    def get_user(self, obj: Booking) -> str | dict[str, Any] | None:
         if not (user_obj := obj.user):
             return None
         request = self.context.get("request")
@@ -60,7 +62,7 @@ class BookingSerializer(serializers.ModelSerializer):
 
         return user and user.is_authenticated and obj.user == user
 
-    def validate(self, data: dict[str]) -> dict[str]:
+    def validate(self, data: dict[str, Any]) -> dict[str, Any]:
         # check slot exists and availability (only if slot is being updated)
         slot = data.get("slot")
         if slot is not None:
@@ -82,7 +84,7 @@ class BookingSerializer(serializers.ModelSerializer):
 
         return data
 
-    def create(self, validated_data: dict[str]) -> Booking:
+    def create(self, validated_data: dict[str, Any]) -> Booking:
         # Use a transaction to avoid race conditions on slot availability
         with transaction.atomic():
             slot = AppointmentSlot.objects.select_for_update().get(pk=validated_data["slot"].pk)

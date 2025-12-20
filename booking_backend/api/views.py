@@ -43,7 +43,7 @@ class AppointmentSlotViewSet(viewsets.ModelViewSet):
 
 
 class BookingViewSet(viewsets.ModelViewSet):
-    queryset = Booking.objects.all().select_related("slot")
+    queryset = Booking.objects.all().select_related("slot", "slot__doctor", "user")
     serializer_class = BookingSerializer
 
     def get_permissions(self) -> list[permissions.BasePermission]:
@@ -80,7 +80,7 @@ class BookingViewSet(viewsets.ModelViewSet):
         return super().get_serializer_class()
 
     def get_queryset(self) -> QuerySet[Booking]:
-        qs = super().get_queryset()
+        qs = super().get_queryset().select_related("slot", "slot__doctor", "user")
         # support filtering by slot
         if slot_id := self.request.query_params.get("slot"):
             qs = qs.filter(slot_id=slot_id, status=Booking.Status.CONFIRMED)

@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Interactive booking calendar and reservation system"
 readme = "README.md"
 authors = [ { name = "Bartosz Jagłowski", email = "gdx180489@student.gdansk.merito.pl" } ]
-requires-python = ">=3.13"
+requires-python = ">=3.14"
 
 dependencies = [
     "Django",
@@ -31,7 +31,7 @@ dev = [
 line-length = 160
 # ruff excludes patterns (avoid linting auto-generated files)
 exclude = ["**/migrations/**", "**/static/**", "**/templates/**"]
-target-version = "py313"
+target-version = "py314"
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "C", "B", "I"]

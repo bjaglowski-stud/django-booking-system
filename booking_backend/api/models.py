@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -19,19 +21,19 @@ class AppointmentSlot(models.Model):
     class Meta:
         ordering = ["start"]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.start.isoformat()}"
 
-    def is_booked(self):
+    def is_booked(self) -> bool:
         """Check if slot has any confirmed booking."""
-        return self.bookings.filter(status="confirmed").exists()
+        return self.bookings.filter(status=Booking.Status.CONFIRMED).exists()
 
 
 class Booking(models.Model):
-    STATUS_CHOICES = (
-        ("confirmed", "Confirmed"),
-        ("cancelled", "Cancelled"),
-    )
+    class Status(models.TextChoices):
+        CONFIRMED = "confirmed", "Confirmed"
+        CANCELLED = "cancelled", "Cancelled"
+
     slot = models.ForeignKey(AppointmentSlot, on_delete=models.CASCADE, related_name="bookings")
     # optional link to authenticated user
     user = models.ForeignKey(
@@ -43,20 +45,20 @@ class Booking(models.Model):
     )
     # optional reason/notes for appointment
     reason = models.TextField(blank=True)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="confirmed")
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.CONFIRMED)
 
     class Meta:
         ordering = ["id"]
 
-    def __str__(self):
+    def __str__(self) -> str:
         owner = self.user.username if self.user else "Anonymous"
         return f"Booking for {owner} @ {self.slot.start.isoformat()}"
 
-    def clean(self):
+    def clean(self) -> None:
         if self.slot.start < timezone.now():
             raise ValidationError("Cannot book slots in the past")
-        if self.status == "confirmed" and self.slot.is_booked():
+        if self.status == self.Status.CONFIRMED and self.slot.is_booked():
             # Check if there's already a confirmed booking for this slot
-            existing = self.slot.bookings.filter(status="confirmed").exclude(pk=self.pk)
+            existing = self.slot.bookings.filter(status=self.Status.CONFIRMED).exclude(pk=self.pk)
             if existing.exists():
                 raise ValidationError("Slot is already booked")

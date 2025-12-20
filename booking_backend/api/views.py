@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from django.utils import timezone
 from django.views.generic import TemplateView
 from rest_framework import permissions, status, viewsets
@@ -15,6 +19,9 @@ from .permissions import (
 )
 from .serializers import AppointmentSlotSerializer, BookingPublicSerializer, BookingSerializer, UserRegistrationSerializer
 
+if TYPE_CHECKING:
+    from django.db.models import QuerySet
+
 
 class IndexView(TemplateView):
     template_name = "index.html"
@@ -24,13 +31,13 @@ class AppointmentSlotViewSet(viewsets.ModelViewSet):
     queryset = AppointmentSlot.objects.all()
     serializer_class = AppointmentSlotSerializer
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet[AppointmentSlot]:
         # Only return future appointment slots
         qs = super().get_queryset()
         now = timezone.now()
         return qs.filter(start__gte=now).order_by("start")
 
-    def get_permissions(self):
+    def get_permissions(self) -> list[permissions.BasePermission]:
         if self.action in ("create", "update", "partial_update", "destroy"):
             # allow administrators or doctors to manage slots
             return [IsDoctor() or IsAdministrator()]
@@ -41,7 +48,7 @@ class BookingViewSet(viewsets.ModelViewSet):
     queryset = Booking.objects.all().select_related("slot")
     serializer_class = BookingSerializer
 
-    def get_permissions(self):
+    def get_permissions(self) -> list[permissions.BasePermission]:
         # only authenticated users can create bookings; listing by slot may be public; other actions require admin
         if self.action == "create":
             return [permissions.IsAuthenticated(), CanCreateBooking()]
@@ -62,7 +69,7 @@ class BookingViewSet(viewsets.ModelViewSet):
             return [permissions.IsAuthenticated(), IsBookingOwnerOrReadOnly()]
         return [IsAdministrator()]
 
-    def get_serializer_class(self):
+    def get_serializer_class(self) -> type[BookingSerializer] | type[BookingPublicSerializer]:
         # when listing by slot, choose serializer based on requester:
         # - staff or authenticated user (owner) should see full booking fields for their own bookings
         # - anonymous/public should get the limited serializer
@@ -74,11 +81,11 @@ class BookingViewSet(viewsets.ModelViewSet):
             return BookingPublicSerializer
         return super().get_serializer_class()
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet[Booking]:
         qs = super().get_queryset()
         # support filtering by slot
         if slot_id := self.request.query_params.get("slot"):
-            qs = qs.filter(slot_id=slot_id, status="confirmed")
+            qs = qs.filter(slot_id=slot_id, status=Booking.Status.CONFIRMED)
             # Privacy: if requester is staff, return all bookings for the slot.
             # If requester is an authenticated regular user, return only their own bookings for that slot.
             # Otherwise (anonymous), do not expose bookings for the slot.
@@ -91,13 +98,13 @@ class BookingViewSet(viewsets.ModelViewSet):
             return qs.none()
         return qs
 
-    def perform_create(self, serializer):
+    def perform_create(self, serializer: BookingSerializer) -> Booking:
         booking = serializer.save()
         # signals will handle email
         return booking
 
     @action(detail=False, methods=["get"], permission_classes=[permissions.IsAuthenticated])
-    def mine(self, request):
+    def mine(self, request) -> Response:
         qs = Booking.objects.filter(user=request.user).select_related("slot")
         page = self.paginate_queryset(qs)
         serializer = self.get_serializer(page or qs, many=True)
@@ -107,7 +114,7 @@ class BookingViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     @action(detail=False, methods=["get"], permission_classes=[permissions.IsAuthenticated, IsAdministrator])
-    def all_bookings(self, request):
+    def all_bookings(self, request) -> Response:
         """Endpoint for administrators to view all bookings."""
         qs = Booking.objects.all().select_related("slot", "user")
         page = self.paginate_queryset(qs)
@@ -118,13 +125,13 @@ class BookingViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     @action(detail=True, methods=["post"], permission_classes=[permissions.IsAuthenticated])
-    def cancel(self, request, pk=None):
+    def cancel(self, request, pk: int | None = None) -> Response:
         booking = self.get_object()
         # Allow owner or administrators to cancel
         is_admin = request.user.groups.filter(name="administrator").exists()
         if booking.user != request.user and not is_admin:
             return Response({"detail": "Not allowed"}, status=status.HTTP_403_FORBIDDEN)
-        booking.status = "cancelled"
+        booking.status = Booking.Status.CANCELLED
         booking.save()
         serializer = self.get_serializer(booking)
 
@@ -136,7 +143,7 @@ class RegisterView(APIView):
 
     permission_classes = [permissions.AllowAny]
 
-    def post(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs) -> Response:
         serializer = UserRegistrationSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
@@ -158,7 +165,7 @@ class CurrentUserView(APIView):
 
     permission_classes = [permissions.IsAuthenticated]
 
-    def get(self, request):
+    def get(self, request) -> Response:
         user = request.user
 
         return Response(

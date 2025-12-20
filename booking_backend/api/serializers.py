@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
 from django.db import transaction
 from django.utils import timezone
@@ -15,10 +16,10 @@ class AppointmentSlotSerializer(serializers.ModelSerializer):
         model = AppointmentSlot
         fields = ("id", "start", "doctor", "is_booked")
 
-    def get_is_booked(self, obj):
+    def get_is_booked(self, obj: AppointmentSlot) -> bool:
         return obj.is_booked()
 
-    def get_doctor(self, obj):
+    def get_doctor(self, obj: AppointmentSlot) -> str | None:
         if obj.doctor:
             return obj.doctor.get_full_name() or obj.doctor.username
 
@@ -35,12 +36,12 @@ class BookingSerializer(serializers.ModelSerializer):
         fields = ("id", "slot", "user", "reason", "status", "is_owner", "slot_details")
         read_only_fields = ("status", "user")
 
-    def get_slot_details(self, obj):
+    def get_slot_details(self, obj: Booking) -> dict[str] | None:
         if obj.slot:
             return {"id": obj.slot.id, "start": obj.slot.start.isoformat(), "doctor_name": obj.slot.doctor.get_full_name() if obj.slot.doctor else None}
         return None
 
-    def get_user(self, obj):
+    def get_user(self, obj: Booking) -> str | dict[str, str] | None:
         if not (user_obj := obj.user):
             return None
         request = self.context.get("request")
@@ -52,14 +53,14 @@ class BookingSerializer(serializers.ModelSerializer):
 
         return str(user_obj)
 
-    def get_is_owner(self, obj):
+    def get_is_owner(self, obj: Booking) -> bool:
         if not (request := self.context.get("request")):
             return False
         user = getattr(request, "user", None)
 
         return user and user.is_authenticated and obj.user == user
 
-    def validate(self, data):
+    def validate(self, data: dict[str]) -> dict[str]:
         # check slot exists and availability (only if slot is being updated)
         slot = data.get("slot")
         if slot is not None:
@@ -73,7 +74,7 @@ class BookingSerializer(serializers.ModelSerializer):
 
             # prevent duplicate booking: check by authenticated user
             if user and user.is_authenticated:
-                if Booking.objects.filter(slot=slot, user=user, status="confirmed").exists():
+                if Booking.objects.filter(slot=slot, user=user, status=Booking.Status.CONFIRMED).exists():
                     raise serializers.ValidationError("You already have a confirmed booking for this slot")
             else:
                 # booking without authentication is not allowed by the viewset; keep validation minimal
@@ -81,7 +82,7 @@ class BookingSerializer(serializers.ModelSerializer):
 
         return data
 
-    def create(self, validated_data):
+    def create(self, validated_data: dict[str]) -> Booking:
         # Use a transaction to avoid race conditions on slot availability
         with transaction.atomic():
             slot = AppointmentSlot.objects.select_for_update().get(pk=validated_data["slot"].pk)
@@ -114,12 +115,12 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         model = get_user_model()
         fields = ("username", "email", "password", "first_name", "last_name")
 
-    def validate_password(self, value):
+    def validate_password(self, value: str) -> str:
         validate_password(value)
 
         return value
 
-    def create(self, validated_data):
+    def create(self, validated_data: dict[str]) -> User:
         User = get_user_model()
         password = validated_data.pop("password")
         user = User.objects.create(**validated_data)

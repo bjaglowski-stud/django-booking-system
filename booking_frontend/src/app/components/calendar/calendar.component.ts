@@ -12,11 +12,12 @@ import { AuthService } from '../../services/auth.service';
 import { NotificationService } from '../../services/notification.service';
 import { BookingModalComponent } from '../booking-modal/booking-modal.component';
 import { AddSlotModalComponent } from '../add-slot-modal/add-slot-modal.component';
+import { EditBookingModalComponent } from '../edit-booking-modal/edit-booking-modal.component';
 
 @Component({
     selector: 'app-calendar',
     standalone: true,
-    imports: [CommonModule, FullCalendarModule, BookingModalComponent, AddSlotModalComponent],
+    imports: [CommonModule, FullCalendarModule, BookingModalComponent, AddSlotModalComponent, EditBookingModalComponent],
     template: `
     <div class="calendar-container">
       <full-calendar #calendar [options]="calendarOptions()"></full-calendar>
@@ -29,6 +30,14 @@ import { AddSlotModalComponent } from '../add-slot-modal/add-slot-modal.componen
         (close)="showBookingModal.set(false)"
         (bookingCreated)="onBookingCreated()">
       </app-booking-modal>
+    }
+
+    @if (showEditBookingModal()) {
+      <app-edit-booking-modal 
+        [slotId]="selectedSlotId()"
+        (close)="showEditBookingModal.set(false)"
+        (bookingUpdated)="onBookingUpdated()">
+      </app-edit-booking-modal>
     }
 
     @if (showAddSlotModal()) {
@@ -51,6 +60,7 @@ export class CalendarComponent implements OnInit {
     @Output() loginRequired = new EventEmitter<void>();
 
     showBookingModal = signal(false);
+    showEditBookingModal = signal(false);
     showAddSlotModal = signal(false);
     selectedSlotId = signal<number | null>(null);
     selectedSlotDate = signal<Date | null>(null);
@@ -74,6 +84,12 @@ export class CalendarComponent implements OnInit {
         selectable: true,
         selectMirror: true,
         editable: false,
+        displayEventEnd: false,
+        eventTimeFormat: {
+            hour: '2-digit',
+            minute: '2-digit',
+            meridiem: false
+        },
         events: (info, successCallback, failureCallback) => {
             this.loadEvents(info.start, info.end, successCallback, failureCallback);
         },
@@ -99,7 +115,13 @@ export class CalendarComponent implements OnInit {
         const isBooked = clickInfo.event.extendedProps['isBooked'];
 
         if (isBooked) {
-            this.loadBookingDetails(slotId);
+            // Show edit modal for booked slots (requires authentication)
+            if (!this.authService.isAuthenticated()) {
+                this.loginRequired.emit();
+                return;
+            }
+            this.selectedSlotId.set(slotId);
+            this.showEditBookingModal.set(true);
         } else {
             if (!this.authService.isAuthenticated()) {
                 // Przekieruj do logowania jeśli użytkownik nie jest zalogowany
@@ -129,18 +151,6 @@ export class CalendarComponent implements OnInit {
                     this.showAddSlotModal.set(true);
                 }
             }
-        });
-    }
-
-    loadBookingDetails(slotId: number): void {
-        this.bookingService.getBookingsBySlot(slotId).subscribe({
-            next: (bookings) => {
-                if (bookings.length > 0) {
-                    const booking = bookings[0];
-                    alert(`Wizyta zarezerwowana przez: ${booking.user_details?.first_name} ${booking.user_details?.last_name}\nPowód: ${booking.reason}`);
-                }
-            },
-            error: (err) => console.error('Error loading booking details:', err)
         });
     }
 
@@ -176,6 +186,11 @@ export class CalendarComponent implements OnInit {
 
     onBookingCreated(): void {
         this.showBookingModal.set(false);
+        this.refreshCalendar();
+    }
+
+    onBookingUpdated(): void {
+        this.showEditBookingModal.set(false);
         this.refreshCalendar();
     }
 

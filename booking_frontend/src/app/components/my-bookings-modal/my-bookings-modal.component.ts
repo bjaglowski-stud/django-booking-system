@@ -1,13 +1,15 @@
 import { Component, Output, EventEmitter, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { BookingService } from '../../services/booking.service';
+import { AuthService } from '../../services/auth.service';
 import { Booking } from '../../models/types';
 import { NotificationService } from '../../services/notification.service';
 
 @Component({
   selector: 'app-my-bookings-modal',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   template: `
     <div class="modal-backdrop" (click)="onClose()"></div>
     <div class="modal-dialog modal-lg">
@@ -31,16 +33,37 @@ import { NotificationService } from '../../services/notification.service';
                 <thead>
                   <tr>
                     <th>Data</th>
-                    <th>Lekarz</th>
+                    @if (isDoctor()) {
+                      <th>Pacjent</th>
+                    } @else {
+                      <th>Lekarz</th>
+                    }
+                    <th>Powód</th>
                     <th>Status</th>
                     <th>Akcje</th>
                   </tr>
                 </thead>
                 <tbody>
                   @for (booking of paginatedBookings(); track booking.id) {
-                    <tr [title]="'Powód: ' + booking.reason" class="booking-row">
+                    <tr class="booking-row">
                       <td>{{ formatDate(booking.slot_details?.start) }}</td>
-                      <td>{{ booking.slot_details?.doctor_name }}</td>
+                      @if (isDoctor()) {
+                        <td>{{ booking.user_details?.first_name }} {{ booking.user_details?.last_name }}</td>
+                      } @else {
+                        <td>{{ booking.slot_details?.doctor_name }}</td>
+                      }
+                      <td>
+                        @if (editingBookingId() === booking.id && !isDoctor()) {
+                          <input 
+                            type="text" 
+                            class="form-control form-control-sm" 
+                            [(ngModel)]="editReason"
+                            (keyup.enter)="saveReason(booking.id)"
+                            (keyup.escape)="cancelEdit()">
+                        } @else {
+                          <span>{{ booking.reason }}</span>
+                        }
+                      </td>
                       <td>
                         <span [class]="getStatusClass(booking.status)">
                           {{ getStatusLabel(booking.status) }}
@@ -48,8 +71,22 @@ import { NotificationService } from '../../services/notification.service';
                       </td>
                       <td>
                         @if (booking.status !== 'cancelled') {
+                          @if (editingBookingId() === booking.id && !isDoctor()) {
+                            <button class="btn btn-sm btn-success me-1" (click)="saveReason(booking.id)">
+                              Zapisz
+                            </button>
+                            <button class="btn btn-sm btn-secondary me-1" (click)="cancelEdit()">
+                              Anuluj
+                            </button>
+                          } @else {
+                            @if (!isDoctor()) {
+                              <button class="btn btn-sm btn-primary me-1" (click)="editBooking(booking)">
+                                Edytuj
+                              </button>
+                            }
+                          }
                           <button class="btn btn-sm btn-danger" (click)="cancelBooking(booking.id)">
-                            Anuluj
+                            Anuluj wizytę
                           </button>
                         }
                       </td>
@@ -113,19 +150,31 @@ export class MyBookingsModalComponent implements OnInit {
   @Output() close = new EventEmitter<void>();
 
   private bookingService = inject(BookingService);
+  private authService = inject(AuthService);
   private notificationService = inject(NotificationService);
 
   bookings = signal<Booking[]>([]);
   paginatedBookings = signal<Booking[]>([]);
   loading = signal(true);
   errorMessage = signal('');
+  isDoctor = signal(false);
 
   currentPage = signal(1);
   pageSize = 10;
   totalPages = signal(1);
 
+  editingBookingId = signal<number | null>(null);
+  editReason = '';
+
   ngOnInit(): void {
+    this.checkIfDoctor();
     this.loadBookings();
+  }
+
+  checkIfDoctor(): void {
+    this.authService.checkIfDoctor().subscribe({
+      next: (isDoctor) => this.isDoctor.set(isDoctor)
+    });
   }
 
   loadBookings(): void {
@@ -185,6 +234,37 @@ export class MyBookingsModalComponent implements OnInit {
       },
       error: (err) => {
         const errorMsg = err.error?.detail || 'Błąd podczas anulowania rezerwacji';
+        this.errorMessage.set(errorMsg);
+        this.notificationService.error(errorMsg);
+      }
+    });
+  }
+
+  editBooking(booking: Booking): void {
+    this.editingBookingId.set(booking.id);
+    this.editReason = booking.reason;
+  }
+
+  cancelEdit(): void {
+    this.editingBookingId.set(null);
+    this.editReason = '';
+  }
+
+  saveReason(bookingId: number): void {
+    if (!this.editReason.trim() || this.editReason.length < 3) {
+      this.notificationService.error('Powód wizyty musi mieć co najmniej 3 znaki');
+      return;
+    }
+
+    this.bookingService.updateBooking(bookingId, this.editReason).subscribe({
+      next: () => {
+        this.notificationService.success('Powód wizyty został zaktualizowany');
+        this.editingBookingId.set(null);
+        this.editReason = '';
+        this.loadBookings();
+      },
+      error: (err) => {
+        const errorMsg = err.error?.detail || err.error?.reason?.[0] || 'Błąd podczas aktualizacji';
         this.errorMessage.set(errorMsg);
         this.notificationService.error(errorMsg);
       }

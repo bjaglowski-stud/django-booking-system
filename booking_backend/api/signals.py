@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 
 def _get_booking_confirmation_email_content(user_name: str, slot_time: str, doctor_name: str | None, reason: str) -> str:
-    return t"""Witaj {user_name},
+    return f"""Witaj {user_name},
 
 Twoja wizyta została pomyślnie zarezerwowana.
 
@@ -30,7 +30,7 @@ System Rezerwacji
 
 
 def _get_booking_cancellation_email_content(user_name: str, slot_time: str, doctor_name: str | None) -> str:
-    return t"""Witaj {user_name},
+    return f"""Witaj {user_name},
 
 Twoja wizyta została anulowana.
 
@@ -46,7 +46,7 @@ System Rezerwacji
 
 
 def _get_doctor_notification_email_content(doctor_name: str, slot_time: str, user_name: str | None, instance: Booking) -> str:
-    return t"""Witaj {doctor_name},
+    return f"""Witaj {doctor_name},
 
 Masz nową rezerwację wizyty.
 

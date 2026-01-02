@@ -41,6 +41,10 @@ class AppointmentSlotViewSet(viewsets.ModelViewSet):
             return [IsDoctor() or IsAdministrator()]
         return [permissions.AllowAny()]
 
+    def perform_create(self, serializer: AppointmentSlotSerializer) -> None:
+        # Automatically assign the doctor field to the logged-in user
+        serializer.save(doctor=self.request.user)
+
 
 class BookingViewSet(viewsets.ModelViewSet):
     queryset = Booking.objects.all().select_related("slot", "slot__doctor", "user")
@@ -103,7 +107,17 @@ class BookingViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["get"], permission_classes=[permissions.IsAuthenticated])
     def mine(self, request) -> Response:
-        qs = Booking.objects.filter(user=request.user).select_related("slot")
+        # If user is a doctor, show bookings for their slots
+        # Otherwise show bookings created by the user
+        is_doctor = request.user.groups.filter(name="doctor").exists()
+
+        if is_doctor:
+            # Show all bookings for slots assigned to this doctor
+            qs = Booking.objects.filter(slot__doctor=request.user).select_related("slot", "user")
+        else:
+            # Show bookings made by this user
+            qs = Booking.objects.filter(user=request.user).select_related("slot")
+
         page = self.paginate_queryset(qs)
         serializer = self.get_serializer(page or qs, many=True)
         if page is not None:
@@ -125,10 +139,14 @@ class BookingViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["post"], permission_classes=[permissions.IsAuthenticated])
     def cancel(self, request, pk: int | None = None) -> Response:
         booking = self.get_object()
-        # Allow owner or administrators to cancel
+        # Allow owner, doctor (slot owner), or administrators to cancel
         is_admin = request.user.groups.filter(name="administrator").exists()
-        if booking.user != request.user and not is_admin:
+        is_doctor = request.user.groups.filter(name="doctor").exists()
+        is_slot_doctor = booking.slot.doctor == request.user if booking.slot.doctor else False
+
+        if booking.user != request.user and not is_admin and not (is_doctor and is_slot_doctor):
             return Response({"detail": "Not allowed"}, status=status.HTTP_403_FORBIDDEN)
+
         booking.status = Booking.Status.CANCELLED
         booking.save()
         serializer = self.get_serializer(booking)

@@ -13,7 +13,10 @@ export class BookingService {
     private apiUrl = '/api/bookings';
 
     getBookingsBySlot(slotId: number): Observable<Booking[]> {
-        return this.http.get<Booking[]>(`${this.apiUrl}/?slot=${slotId}`);
+        return this.http.get<Booking[]>(
+            `${this.apiUrl}/?slot=${slotId}`,
+            { headers: this.authService.getAuthHeaders() }
+        );
     }
 
     getMyBookings(): Observable<Booking[]> {
@@ -34,6 +37,14 @@ export class BookingService {
         return this.http.post<Booking>(
             this.apiUrl + '/',
             { slot: slotId, reason },
+            { headers: this.authService.getAuthHeaders() }
+        );
+    }
+
+    updateBooking(bookingId: number, reason: string): Observable<Booking> {
+        return this.http.patch<Booking>(
+            `${this.apiUrl}/${bookingId}/`,
+            { reason },
             { headers: this.authService.getAuthHeaders() }
         );
     }

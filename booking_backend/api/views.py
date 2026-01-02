@@ -29,7 +29,7 @@ class AppointmentSlotViewSet(viewsets.ModelViewSet):
     queryset = AppointmentSlot.objects.all()
     serializer_class = AppointmentSlotSerializer
 
-    def get_queryset(self) -> QuerySet[AppointmentSlot]:
+    def get_queryset(self) -> "QuerySet[AppointmentSlot]":
         # Only return future appointment slots
         qs = super().get_queryset()
         now = timezone.now()
@@ -83,7 +83,7 @@ class BookingViewSet(viewsets.ModelViewSet):
             return BookingPublicSerializer
         return super().get_serializer_class()
 
-    def get_queryset(self) -> QuerySet[Booking]:
+    def get_queryset(self) -> "QuerySet[Booking]":
         qs = super().get_queryset().select_related("slot", "slot__doctor", "user")
         # support filtering by slot
         if slot_id := self.request.query_params.get("slot"):

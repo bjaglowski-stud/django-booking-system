@@ -33,7 +33,18 @@ class AppointmentSlotViewSet(viewsets.ModelViewSet):
         # Only return future appointment slots
         qs = super().get_queryset()
         now = timezone.now()
-        return qs.filter(start__gte=now).order_by("start")
+        qs = qs.filter(start__gte=now)
+
+        # Support filtering by date range
+        start_date = self.request.query_params.get("start")
+        end_date = self.request.query_params.get("end")
+
+        if start_date:
+            qs = qs.filter(start__gte=start_date)
+        if end_date:
+            qs = qs.filter(start__lte=end_date)
+
+        return qs.order_by("start")
 
     def get_permissions(self) -> list[permissions.BasePermission]:
         if self.action in ("create", "update", "partial_update", "destroy"):
